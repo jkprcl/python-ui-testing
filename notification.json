@@ -1,0 +1,8 @@
+{
+    "title": "Test Notification",
+    "message": "lorem ipsum, dolor sit amet, consectetur adipiscing elit",
+    "icon_path": null,
+    "closable": true,
+    "minimizable": true,
+    "expiry_time": null
+}

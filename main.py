@@ -1,31 +1,67 @@
-import dearpygui.dearpygui as dpg
+import json
+from datetime import datetime
+import pathlib
 
-dpg.create_context()
+test_notification_file = "notification.json"
 
-# set up the default font
-default_font_path = "assets/fonts/JetBrainsMono-Bold.ttf"
-default_font_size = 20
-with dpg.font_registry():
-    # first argument ids the path to the .ttf or .otf file
-    default_font = dpg.add_font(default_font_path, default_font_size)
-dpg.bind_font(default_font)
 
-with dpg.window(tag="Test Window"):
-    dpg.add_text("Hello, world!")
-    dpg.add_loading_indicator(style=1)
+class Notification:
+    def __init__(
+        self,
+        title: str,
+        message: str,
+        icon_path: str = None,
+        closable: bool = True,
+        minimizable: bool = True,
+        expiry_time: datetime = None,
+    ) -> None:
+        if not title:
+            raise ValueError("Title cannot be empty")
+        if not message:
+            raise ValueError("Message cannot be empty")
+        self.title = title
+        self.message = message
+        self.icon_path = icon_path
+        self.closable = closable
+        self.minimizable = minimizable
+        self.expiry_time = expiry_time
 
-dpg.create_viewport(
-    title="Test Notification",
-    width=600,
-    height=200,
-    always_on_top=True,
-    resizable=False,
-    disable_close=True,
-    decorated=False,
-    vsync=True,
-)
-dpg.set_primary_window(window="Test Window", value=True)
-dpg.setup_dearpygui()
-dpg.show_viewport()
-dpg.start_dearpygui()
-dpg.destroy_context()
+
+def load_notification(notification_file_path: str):
+    assert pathlib.Path(notification_file_path).is_file(), "File does not exist"
+    with open(notification_file_path, "r") as notification_file:
+        json_data = json.load(notification_file)
+    expiry_time = None
+    if json_data["expiry_time"] is not None:
+        try:
+            expiry_time = datetime.fromisoformat(json_data["expiry_time"])
+        except Exception as e:
+            print(f"Error loading expiry time: {e}")
+            return None
+    try:
+        notification = Notification(
+            title=json_data["title"],
+            message=json_data["message"],
+            icon_path=json_data["icon_path"],
+            closable=json_data["closable"],
+            minimizable=json_data["minimizable"],
+            expiry_time=expiry_time,
+        )
+    except Exception as e:
+        print(f"Error loading notification: {e}")
+        return None
+    return notification
+
+
+def save_notification(notification_file_path: str, notification: Notification):
+    if not notification:
+        raise ValueError("Notification cannot be empty")
+    if not isinstance(notification, Notification):
+        raise ValueError("notification must be a valid Notification object")
+    try:
+        pathlib.Path(notification_file_path).write_text(
+            json.dumps(notification.__dict__, indent=4), encoding="utf-8"
+        )
+    except Exception as e:
+        print(f"Error serializing notification: {e}")
+        return
